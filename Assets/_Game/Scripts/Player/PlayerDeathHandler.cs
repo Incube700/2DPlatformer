@@ -20,35 +20,11 @@ public class PlayerDeathHandler : MonoBehaviour
         _animationSync = GetComponent<PlayerAnimationSync>();
         _rigidbody2D = GetComponent<Rigidbody2D>();
         _collider2D = GetComponent<Collider2D>();
-        _levelRestarter = FindFirstObjectByType<LevelRestarter>();
     }
 
     private void Awake()
     {
-        if (_movement == null)
-        {
-            _movement = GetComponent<PlayerMovement>();
-        }
-
-        if (_animationSync == null)
-        {
-            _animationSync = GetComponent<PlayerAnimationSync>();
-        }
-
-        if (_rigidbody2D == null)
-        {
-            _rigidbody2D = GetComponent<Rigidbody2D>();
-        }
-
-        if (_collider2D == null)
-        {
-            _collider2D = GetComponent<Collider2D>();
-        }
-
-        if (_levelRestarter == null)
-        {
-            _levelRestarter = FindFirstObjectByType<LevelRestarter>();
-        }
+        ResolveDependencies();
     }
 
     public void Kill()
@@ -88,5 +64,33 @@ public class PlayerDeathHandler : MonoBehaviour
         }
 
         Debug.LogWarning("LevelRestarter is not assigned on PlayerDeathHandler.");
+    }
+
+    private void ResolveDependencies()
+    {
+        if (_movement == null)
+        {
+            _movement = GetComponent<PlayerMovement>();
+        }
+
+        if (_animationSync == null)
+        {
+            _animationSync = GetComponent<PlayerAnimationSync>();
+        }
+
+        if (_rigidbody2D == null)
+        {
+            _rigidbody2D = GetComponent<Rigidbody2D>();
+        }
+
+        if (_collider2D == null)
+        {
+            _collider2D = GetComponent<Collider2D>();
+        }
+
+        if (_levelRestarter == null)
+        {
+            _levelRestarter = Object.FindFirstObjectByType<LevelRestarter>();
+        }
     }
 }

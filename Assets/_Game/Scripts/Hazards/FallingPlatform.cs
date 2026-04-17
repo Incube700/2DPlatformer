@@ -51,9 +51,17 @@ public class FallingPlatform : MonoBehaviour
             return;
         }
 
-        PlayerDeathHandler playerDeathHandler = other.GetComponentInParent<PlayerDeathHandler>();
+        if (_rigidbody2D == null || _platformCollider == null)
+        {
+            return;
+        }
 
-        if (playerDeathHandler == null || playerDeathHandler.IsDead)
+        if (TryGetPlayerDeathHandler(other, out PlayerDeathHandler playerDeathHandler) == false)
+        {
+            return;
+        }
+
+        if (playerDeathHandler.IsDead)
         {
             return;
         }
@@ -94,6 +102,12 @@ public class FallingPlatform : MonoBehaviour
         float platformCenterHeight = _platformCollider.bounds.center.y;
 
         return playerFeetHeight >= platformCenterHeight;
+    }
+
+    private bool TryGetPlayerDeathHandler(Component other, out PlayerDeathHandler playerDeathHandler)
+    {
+        playerDeathHandler = other.GetComponentInParent<PlayerDeathHandler>();
+        return playerDeathHandler != null;
     }
 
     private void PrepareIdleState()

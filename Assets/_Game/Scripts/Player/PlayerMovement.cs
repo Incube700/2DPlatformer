@@ -9,6 +9,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Rigidbody2D _rigidbody2D;
     [SerializeField] private PlayerSurfaceDetector _surfaceDetector;
     [SerializeField] private Transform _visualRoot;
+    [SerializeField] private SpriteRenderer _visualSpriteRenderer;
 
     [Header("Move")]
     [SerializeField] private float _moveSpeed = 8f;
@@ -37,6 +38,7 @@ public class PlayerMovement : MonoBehaviour
     private float _baseGravityScale;
     private int _facingDirection;
     private Vector3 _visualStartScale;
+    private bool _hasShownVisualSpriteWarning;
 
     public bool IsGrounded => _isGrounded;
 
@@ -46,7 +48,8 @@ public class PlayerMovement : MonoBehaviour
     {
         _rigidbody2D = GetComponent<Rigidbody2D>();
         _surfaceDetector = GetComponent<PlayerSurfaceDetector>();
-        _visualRoot = transform.Find("Visual");
+        _visualRoot = transform;
+        _visualSpriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         if (_rigidbody2D != null)
         {
@@ -58,20 +61,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        if (_rigidbody2D == null)
-        {
-            _rigidbody2D = GetComponent<Rigidbody2D>();
-        }
-
-        if (_surfaceDetector == null)
-        {
-            _surfaceDetector = GetComponent<PlayerSurfaceDetector>();
-        }
-
-        if (_visualRoot == null)
-        {
-            _visualRoot = transform.Find("Visual");
-        }
+        ResolveDependencies();
 
         _baseGravityScale = _rigidbody2D != null ? _rigidbody2D.gravityScale : 1f;
         _visualStartScale = _visualRoot != null ? _visualRoot.localScale : Vector3.one;
@@ -168,12 +158,7 @@ public class PlayerMovement : MonoBehaviour
             _surfaceDetector.SetFacingDirection(_facingDirection);
         }
 
-        if (_visualRoot != null)
-        {
-            Vector3 scale = _visualStartScale;
-            scale.x = Mathf.Abs(_visualStartScale.x) * _facingDirection;
-            _visualRoot.localScale = scale;
-        }
+        UpdateVisualFacing();
     }
 
     private void TryConsumeJumpBuffer()
@@ -306,5 +291,73 @@ public class PlayerMovement : MonoBehaviour
         }
 
         _rigidbody2D.gravityScale = _baseGravityScale * gravityMultiplier;
+    }
+
+    private void ResolveDependencies()
+    {
+        if (_rigidbody2D == null)
+        {
+            _rigidbody2D = GetComponent<Rigidbody2D>();
+        }
+
+        if (_surfaceDetector == null)
+        {
+            _surfaceDetector = GetComponent<PlayerSurfaceDetector>();
+        }
+
+        if (_visualRoot == null)
+        {
+            _visualRoot = transform;
+        }
+
+        if (_visualSpriteRenderer == null)
+        {
+            _visualSpriteRenderer = _visualRoot.GetComponent<SpriteRenderer>();
+        }
+
+        if (_visualSpriteRenderer == null)
+        {
+            _visualSpriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
+    }
+
+    private void UpdateVisualFacing()
+    {
+        if (_visualRoot == null)
+        {
+            return;
+        }
+
+        if (_visualRoot == transform)
+        {
+            UpdateSpriteFacing();
+            return;
+        }
+
+        Vector3 scale = _visualStartScale;
+        scale.x = Mathf.Abs(_visualStartScale.x) * _facingDirection;
+        _visualRoot.localScale = scale;
+    }
+
+    private void UpdateSpriteFacing()
+    {
+        if (_visualSpriteRenderer == null)
+        {
+            ShowVisualSpriteWarning();
+            return;
+        }
+
+        _visualSpriteRenderer.flipX = _facingDirection < 0;
+    }
+
+    private void ShowVisualSpriteWarning()
+    {
+        if (_hasShownVisualSpriteWarning)
+        {
+            return;
+        }
+
+        _hasShownVisualSpriteWarning = true;
+        Debug.LogWarning($"{nameof(PlayerMovement)} on {name} could not find SpriteRenderer for visual flip. Assign Visual Root or Visual Sprite Renderer in the inspector.", this);
     }
 }

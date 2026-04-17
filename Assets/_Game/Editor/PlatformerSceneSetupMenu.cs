@@ -70,7 +70,7 @@ public static class PlatformerSceneSetupMenu
         CreateDeathZone(zonesRoot);
         CreateExampleSaw(enemiesRoot);
         CreateExampleFallingPlatform(platformsRoot);
-        SetupCamera(player.transform);
+        SetupCamera();
 
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
         Selection.activeGameObject = levelRoot;
@@ -308,7 +308,7 @@ public static class PlatformerSceneSetupMenu
         SetObjectField(fallingPlatform, "_platformCollider", boxCollider2D);
     }
 
-    private static void SetupCamera(Transform target)
+    private static void SetupCamera()
     {
         Camera cameraComponent = Object.FindFirstObjectByType<Camera>();
         GameObject cameraObject;
@@ -332,9 +332,6 @@ public static class PlatformerSceneSetupMenu
         {
             cameraObject.transform.position = new Vector3(cameraObject.transform.position.x, cameraObject.transform.position.y, -10f);
         }
-
-        CameraFollow2D cameraFollow = GetOrCreateComponent<CameraFollow2D>(cameraObject, out _);
-        SetObjectField(cameraFollow, "_target", target);
     }
 
     private static GameObject GetOrCreateRootObject(string name, out bool created)

@@ -3,19 +3,22 @@ using UnityEngine;
 public class PlayerSurfaceDetector : MonoBehaviour
 {
     [SerializeField] private Transform _groundCheck;
-    [SerializeField] private Transform _wallCheck;
-    [SerializeField] private LayerMask _groundLayerMask = ~0;
+    [SerializeField] private Collider2D _playerCollider;
+    [SerializeField] private LayerMask _groundLayerMask;
     [SerializeField] private float _groundCheckRadius = 0.18f;
-    [SerializeField] private Vector2 _wallCheckSize = new Vector2(0.2f, 0.9f);
 
-    private Vector3 _wallCheckStartLocalPosition;
+    [SerializeField] private float _wallCheckDistance = 0.08f;
+    [SerializeField] private float _wallCheckHeightPadding = 0.1f;
+
     private int _facingDirection = 1;
+    private bool _hasShownGroundCheckWarning;
+    private bool _hasShownGroundLayerMaskWarning;
+    private bool _hasShownPlayerColliderWarning;
 
     private void Reset()
     {
         _groundCheck = transform.Find("GroundCheck");
-        _wallCheck = transform.Find("WallCheck");
-        CacheWallCheckLocalPosition();
+        _playerCollider = GetComponent<Collider2D>();
     }
 
     private void Awake()
@@ -25,18 +28,15 @@ public class PlayerSurfaceDetector : MonoBehaviour
             _groundCheck = transform.Find("GroundCheck");
         }
 
-        if (_wallCheck == null)
+        if (_playerCollider == null)
         {
-            _wallCheck = transform.Find("WallCheck");
+            _playerCollider = GetComponent<Collider2D>();
         }
-
-        CacheWallCheckLocalPosition();
-        SetFacingDirection(_facingDirection);
     }
 
     public bool IsGrounded()
     {
-        if (_groundCheck == null)
+        if (CanCheckGround() == false)
         {
             return false;
         }
@@ -46,12 +46,15 @@ public class PlayerSurfaceDetector : MonoBehaviour
 
     public bool IsTouchingWall()
     {
-        if (_wallCheck == null)
+        if (CanCheckWall() == false)
         {
             return false;
         }
 
-        return Physics2D.OverlapBox(_wallCheck.position, _wallCheckSize, 0f, _groundLayerMask) != null;
+        Vector2 checkSize = GetWallCheckSize();
+        Vector2 checkCenter = GetWallCheckCenter(checkSize);
+
+        return Physics2D.OverlapBox(checkCenter, checkSize, 0f, _groundLayerMask) != null;
     }
 
     public bool TryGetWallDirection(out int wallDirection)
@@ -74,25 +77,95 @@ public class PlayerSurfaceDetector : MonoBehaviour
         }
 
         _facingDirection = facingDirection > 0 ? 1 : -1;
-
-        if (_wallCheck == null)
-        {
-            return;
-        }
-
-        Vector3 localPosition = _wallCheckStartLocalPosition;
-        localPosition.x = Mathf.Abs(_wallCheckStartLocalPosition.x) * _facingDirection;
-        _wallCheck.localPosition = localPosition;
     }
 
-    private void CacheWallCheckLocalPosition()
+    private bool CanCheckGround()
     {
-        if (_wallCheck == null)
+        if (_groundCheck == null)
+        {
+            ShowGroundCheckWarning();
+            return false;
+        }
+
+        if (HasGroundLayerMask() == false)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool CanCheckWall()
+    {
+        if (_playerCollider == null)
+        {
+            ShowPlayerColliderWarning();
+            return false;
+        }
+
+        if (HasGroundLayerMask() == false)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool HasGroundLayerMask()
+    {
+        if (_groundLayerMask.value != 0)
+        {
+            return true;
+        }
+
+        if (_hasShownGroundLayerMaskWarning == false)
+        {
+            _hasShownGroundLayerMaskWarning = true;
+            Debug.LogWarning($"{nameof(PlayerSurfaceDetector)} on {name} requires Ground Layer Mask to be assigned in the inspector.", this);
+        }
+
+        return false;
+    }
+
+    private Vector2 GetWallCheckSize()
+    {
+        Bounds bounds = _playerCollider.bounds;
+
+        float height = Mathf.Max(0.1f, bounds.size.y - _wallCheckHeightPadding);
+
+        return new Vector2(_wallCheckDistance, height);
+    }
+
+    private Vector2 GetWallCheckCenter(Vector2 checkSize)
+    {
+        Bounds bounds = _playerCollider.bounds;
+
+        float centerX = bounds.center.x + (bounds.extents.x + checkSize.x * 0.5f) * _facingDirection;
+        float centerY = bounds.center.y;
+
+        return new Vector2(centerX, centerY);
+    }
+
+    private void ShowGroundCheckWarning()
+    {
+        if (_hasShownGroundCheckWarning)
         {
             return;
         }
 
-        _wallCheckStartLocalPosition = _wallCheck.localPosition;
+        _hasShownGroundCheckWarning = true;
+        Debug.LogWarning($"{nameof(PlayerSurfaceDetector)} on {name} requires Ground Check transform.", this);
+    }
+
+    private void ShowPlayerColliderWarning()
+    {
+        if (_hasShownPlayerColliderWarning)
+        {
+            return;
+        }
+
+        _hasShownPlayerColliderWarning = true;
+        Debug.LogWarning($"{nameof(PlayerSurfaceDetector)} on {name} requires player collider.", this);
     }
 
     private void OnDrawGizmosSelected()
@@ -103,10 +176,13 @@ public class PlayerSurfaceDetector : MonoBehaviour
             Gizmos.DrawWireSphere(_groundCheck.position, _groundCheckRadius);
         }
 
-        if (_wallCheck != null)
+        if (_playerCollider != null)
         {
+            Vector2 checkSize = GetWallCheckSize();
+            Vector2 checkCenter = GetWallCheckCenter(checkSize);
+
             Gizmos.color = Color.cyan;
-            Gizmos.DrawWireCube(_wallCheck.position, _wallCheckSize);
+            Gizmos.DrawWireCube(checkCenter, checkSize);
         }
     }
 }

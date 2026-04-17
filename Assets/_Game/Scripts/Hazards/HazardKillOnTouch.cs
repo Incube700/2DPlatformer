@@ -15,13 +15,17 @@ public class HazardKillOnTouch : MonoBehaviour
 
     private void TryKillPlayer(Component other)
     {
-        PlayerDeathHandler playerDeathHandler = other.GetComponentInParent<PlayerDeathHandler>();
-
-        if (playerDeathHandler == null)
+        if (TryGetPlayerDeathHandler(other, out PlayerDeathHandler playerDeathHandler) == false)
         {
             return;
         }
 
         playerDeathHandler.Kill();
+    }
+
+    private bool TryGetPlayerDeathHandler(Component other, out PlayerDeathHandler playerDeathHandler)
+    {
+        playerDeathHandler = other.GetComponentInParent<PlayerDeathHandler>();
+        return playerDeathHandler != null;
     }
 }
